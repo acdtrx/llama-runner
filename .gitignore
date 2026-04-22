@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+.DS_Store
+
+# local dev / editor
+.vite
+*.log
+# …except the fixture the parser tests run against
+!llama-server.log
+.env
+.env.local
+
+# runtime data (never commit user profiles / sessions)
+data

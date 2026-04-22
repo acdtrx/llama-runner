@@ -1,0 +1,25 @@
+{
+  "name": "llama-runner",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local webapp that wraps llama.cpp's llama-server with profile management, live stats, and session history.",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:web",
+    "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspace server && npm run build --workspace web",
+    "start": "npm run start --workspace server",
+    "typecheck": "npm run typecheck --workspace server && npm run typecheck --workspace web"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.0"
+  }
+}
