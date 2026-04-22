@@ -22,7 +22,14 @@ async function main(): Promise<void> {
   const app = Fastify({
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
-      transport: process.env.NODE_ENV === 'production' ? undefined : { target: 'pino-pretty' },
+      transport: process.env.NODE_ENV === 'production' ? undefined : {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss.l',
+          singleLine: true,
+          ignore: 'pid,hostname,reqId,req.host,req.remoteAddress,req.remotePort',
+        },
+      },
     },
   });
 
