@@ -116,6 +116,7 @@ class LlamaServerFacade extends EventEmitter {
       settings.llamaServerHost,
       '--port',
       String(settings.llamaServerPort),
+      '--metrics',
       ...userArgs,
     ];
 

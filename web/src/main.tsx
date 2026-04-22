@@ -7,6 +7,9 @@ import './index.css';
 
 // Import for side effects: these modules subscribe to sseClient on import.
 import './stores/server';
+import './stores/system';
+import './stores/runtime';
+import './stores/notices';
 import './sse/status';
 
 const rootElement = document.getElementById('root');

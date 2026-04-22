@@ -103,6 +103,15 @@ export function startLogsPipeline(dataDir: string): void {
         case 'error':
           bus.emitEvent('metrics.error', { sessionId: evt.sessionId, entry: parsed.entry });
           break;
+        case 'notice':
+          bus.emitEvent('metrics.notice', { sessionId: evt.sessionId, notice: parsed.notice });
+          break;
+        case 'memory-breakdown':
+          bus.emitEvent('metrics.memory-breakdown', {
+            sessionId: evt.sessionId,
+            breakdown: parsed.breakdown,
+          });
+          break;
       }
     }
   });

@@ -257,7 +257,7 @@ export function ProfileConfigForm({ initial, submitLabel, onSubmit, onCancel }: 
         <span className="mt-1 block text-xs opacity-60">
           Extra flags passed to <code>llama-server</code>. Quoted values are preserved (e.g.{' '}
           <code>--chat-template &quot;hello world&quot;</code>). <code>--model</code>, <code>-m</code>,{' '}
-          <code>-hf</code>, <code>--host</code>, <code>--port</code> are injected automatically.
+          <code>-hf</code>, <code>--host</code>, <code>--port</code>, <code>--metrics</code> are injected automatically.
         </span>
         {errorField === 'argsLine' && (
           <span className="mt-1 block text-xs text-red-600">{submitError?.message}</span>

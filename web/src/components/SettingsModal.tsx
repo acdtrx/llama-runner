@@ -13,6 +13,7 @@ const DEFAULT_FORM: Settings = {
   llamaServerPort: 11434,
   sessionsPerProfileLimit: 20,
   uiNoiseFilterEnabledByDefault: true,
+  telemetryIntervalMs: 1000,
 };
 
 const INPUT_CLASS =

@@ -1,9 +1,17 @@
 import { EventEmitter } from 'node:events';
 
 import type { ServerStatus } from '../process/llamaServer.js';
+import type { SystemStatsPayload } from '../system/monitor.js';
+import type {
+  RuntimeMetricsSnapshot,
+  RuntimeNotice,
+  RuntimeSlotsSnapshot,
+} from '../llama/types.js';
 import type {
   CacheState,
+  ConfigNotice,
   ErrorEntry,
+  MemoryBreakdownExit,
   RequestMetrics,
   SessionMetrics,
   StartupMetrics,
@@ -49,6 +57,16 @@ export interface MetricsErrorEvent {
   entry: ErrorEntry;
 }
 
+export interface MetricsNoticeEvent {
+  sessionId: string;
+  notice: ConfigNotice;
+}
+
+export interface MetricsMemoryBreakdownEvent {
+  sessionId: string;
+  breakdown: MemoryBreakdownExit;
+}
+
 export interface MetricsSnapshotEvent {
   sessionId: string;
   metrics: SessionMetrics;
@@ -62,7 +80,13 @@ export interface BusEvents {
   'metrics.request': MetricsRequestEvent;
   'metrics.cache': MetricsCacheEvent;
   'metrics.error': MetricsErrorEvent;
+  'metrics.notice': MetricsNoticeEvent;
+  'metrics.memory-breakdown': MetricsMemoryBreakdownEvent;
   'metrics.snapshot': MetricsSnapshotEvent;
+  'system.stats': SystemStatsPayload;
+  'runtime.metrics': RuntimeMetricsSnapshot;
+  'runtime.slots': RuntimeSlotsSnapshot;
+  'runtime.notice': RuntimeNotice;
 }
 
 export type BusEventName = keyof BusEvents;

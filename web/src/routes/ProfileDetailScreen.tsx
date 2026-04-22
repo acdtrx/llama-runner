@@ -11,6 +11,7 @@ import { fetchRawLog, listSessions, readSession } from '../api/sessions';
 import { HttpError } from '../api/http';
 import { isNoisy } from '../noise';
 import { sseClient } from '../sse/client';
+import { useNoticesStore } from '../stores/notices';
 import { useProfilesStore } from '../stores/profiles';
 import { useServerStore } from '../stores/server';
 import type {
@@ -19,6 +20,7 @@ import type {
   LogLineEvent,
   MetricsCacheEvent,
   MetricsErrorEvent,
+  MetricsMemoryBreakdownEvent,
   MetricsRequestEvent,
   MetricsSnapshotEvent,
   MetricsStartupEvent,
@@ -242,6 +244,15 @@ export function ProfileDetailScreen(): React.ReactElement {
       setView((prev) => (prev ? { ...prev, metrics: evt.metrics } : prev));
     });
 
+    const offMemoryBreakdown = sseClient.on<MetricsMemoryBreakdownEvent>('metrics.memory-breakdown', (evt) => {
+      if (!matchSession(evt.sessionId)) return;
+      setView((prev) =>
+        prev
+          ? { ...prev, metrics: { ...prev.metrics, memoryBreakdownExit: evt.breakdown } }
+          : prev,
+      );
+    });
+
     return () => {
       offLine();
       offStartup();
@@ -249,8 +260,18 @@ export function ProfileDetailScreen(): React.ReactElement {
       offCache();
       offError();
       offSnapshot();
+      offMemoryBreakdown();
     };
   }, [isLiveView, effectiveSessionId]);
+
+  // Seed the notices store when the viewed session changes so notices from
+  // the session's metrics.json show up for historical views. Live notices are
+  // already populated by the notices store's SSE handlers.
+  useEffect(() => {
+    if (!view) return;
+    useNoticesStore.getState().clear();
+    useNoticesStore.getState().seedFromSession(view.metrics.configNotices ?? []);
+  }, [view?.summary.sessionId]);
 
   if (!profile) {
     return (
@@ -316,10 +337,10 @@ export function ProfileDetailScreen(): React.ReactElement {
         <>
           <div className="shrink-0">
             <ErrorBoundary label="Stats panel">
-              <StatsPanel metrics={view.metrics} />
+              <StatsPanel metrics={view.metrics} isLive={isLiveView} />
             </ErrorBoundary>
           </div>
-          <div className="flex flex-1 min-h-0 flex-col">
+          <div className="flex min-h-[420px] flex-1 flex-col">
             <ErrorBoundary label="Log panel">
               <LogPanel
                 lines={view.lines}

@@ -12,6 +12,7 @@ export interface Settings {
   llamaServerPort: number;
   sessionsPerProfileLimit: number;
   uiNoiseFilterEnabledByDefault: boolean;
+  telemetryIntervalMs: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -21,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   llamaServerPort: 11434,
   sessionsPerProfileLimit: 20,
   uiNoiseFilterEnabledByDefault: true,
+  telemetryIntervalMs: 1000,
 };
 
 function settingsPath(dataDir: string): string {

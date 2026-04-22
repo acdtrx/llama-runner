@@ -31,7 +31,7 @@ export interface PredefinedProfiles {
   templates: PredefinedTemplate[];
 }
 
-export const RESERVED_FLAGS = ['--model', '-m', '--host', '--port', '-hf'] as const;
+export const RESERVED_FLAGS = ['--model', '-m', '--host', '--port', '-hf', '--metrics'] as const;
 
 export type ServerState = 'idle' | 'starting' | 'running' | 'stopping' | 'stopped' | 'crashed';
 
@@ -64,6 +64,28 @@ export interface SessionEndedEvent {
 
 export type Backend = 'metal' | 'cuda' | 'cpu' | 'rocm' | 'vulkan' | 'unknown';
 
+export type StopReason = 'eog' | 'limit' | 'word' | 'aborted' | 'unknown';
+
+export interface BaseModelRef {
+  name?: string;
+  organization?: string;
+  repoUrl?: string;
+}
+
+export interface ModelMetadata {
+  license?: string;
+  licenseLink?: string;
+  repoUrl?: string;
+  tags?: string[];
+  baseModels?: BaseModelRef[];
+  imatrixEntries?: number;
+  imatrixChunks?: number;
+  imatrixDataset?: string;
+  nParamsBillion?: number;
+  nVocab?: number;
+  nMerges?: number;
+}
+
 export interface StartupModel {
   path?: string;
   filename?: string;
@@ -75,6 +97,7 @@ export interface StartupModel {
   sizeLabel?: string;
   quantizedBy?: string;
   contextLengthTrained?: number;
+  metadata?: ModelMetadata;
 }
 
 export interface StartupContext {
@@ -92,6 +115,66 @@ export interface StartupKvCache {
   computeBufferMiB?: number;
 }
 
+export interface GpuCapabilities {
+  families: string[];
+  unifiedMemory?: boolean;
+  bfloat?: boolean;
+  tensor?: boolean;
+  residencySets?: boolean;
+  sharedBuffers?: boolean;
+  simdgroupReduction?: boolean;
+  simdgroupMatmul?: boolean;
+  recommendedMaxWorkingSetMiB?: number;
+}
+
+export interface ParamFit {
+  projectedMiB?: number;
+  freeMiB?: number;
+  willLeaveMiB?: number;
+  minRequiredFreeMiB?: number;
+  durationMs?: number;
+  outcome?: 'fit' | 'adjusted' | 'error';
+}
+
+export interface LayerOffload {
+  layersOffloaded?: number;
+  layersTotal?: number;
+  outputLayerOffloaded?: boolean;
+  cpuBufferMiB?: number;
+  gpuBufferMiB?: number;
+  gpuDeviceLabel?: string;
+}
+
+export interface TensorTypeHistogram {
+  [type: string]: number;
+}
+
+export interface MultimodalInfo {
+  hasVision?: boolean;
+  hasAudio?: boolean;
+  mmprojPath?: string;
+  visionProjector?: string;
+  audioProjector?: string;
+  imageSize?: number;
+  patchSize?: number;
+  imageMinPixels?: number;
+  imageMaxPixels?: number;
+  visionModelSizeMiB?: number;
+  audioModelSizeMiB?: number;
+  audioSampleRate?: number;
+  audioNMelBins?: number;
+}
+
+export interface ChatTemplateInfo {
+  thinking?: boolean;
+  exampleFormat?: string;
+}
+
+export interface ContextWarning {
+  nCtxSeq: number;
+  nCtxTrain: number;
+}
+
 export interface StartupMetrics {
   buildInfo?: string;
   systemInfo?: string;
@@ -106,6 +189,13 @@ export interface StartupMetrics {
   promptCacheLimitMiB?: number;
   promptCacheLimitTokens?: number;
   listeningUrl?: string;
+  tensorTypes?: TensorTypeHistogram;
+  gpuCapabilities?: GpuCapabilities;
+  paramFit?: ParamFit;
+  layerOffload?: LayerOffload;
+  multimodal?: MultimodalInfo;
+  chatTemplate?: ChatTemplateInfo;
+  contextWarning?: ContextWarning;
 }
 
 export interface RequestMetrics {
@@ -126,6 +216,8 @@ export interface RequestMetrics {
   evalMs?: number;
   cacheSimilarity?: number;
   finalNTokens?: number;
+  stopReason?: StopReason;
+  stopWord?: string;
 }
 
 export interface CachePromptState {
@@ -150,12 +242,36 @@ export interface TotalsMetrics {
   generatedTokens: number;
   cacheHits: number;
   errors: number;
+  stopReasons: Record<StopReason, number>;
 }
 
 export interface ErrorEntry {
   at: string;
   severity: 'warn' | 'error';
   line: string;
+}
+
+export interface ConfigNotice {
+  at: string;
+  severity: 'info' | 'warn';
+  code: string;
+  message: string;
+}
+
+export interface MemoryBreakdownDevice {
+  label: string;
+  totalMiB?: number;
+  freeMiB?: number;
+  selfMiB?: number;
+  modelMiB?: number;
+  contextMiB?: number;
+  computeMiB?: number;
+  unaccountedMiB?: number;
+}
+
+export interface MemoryBreakdownExit {
+  at: string;
+  devices: MemoryBreakdownDevice[];
 }
 
 export interface SessionMetrics {
@@ -165,6 +281,8 @@ export interface SessionMetrics {
   cache: CacheState | null;
   totals: TotalsMetrics;
   errors: ErrorEntry[];
+  configNotices: ConfigNotice[];
+  memoryBreakdownExit?: MemoryBreakdownExit;
 }
 
 export interface MetricsStartupEvent {
@@ -188,9 +306,85 @@ export interface MetricsErrorEvent {
   entry: ErrorEntry;
 }
 
+export interface MetricsNoticeEvent {
+  sessionId: string;
+  notice: ConfigNotice;
+}
+
+export interface MetricsMemoryBreakdownEvent {
+  sessionId: string;
+  breakdown: MemoryBreakdownExit;
+}
+
 export interface MetricsSnapshotEvent {
   sessionId: string;
   metrics: SessionMetrics;
+}
+
+export interface RuntimeMetricsSnapshot {
+  at: string;
+  counters: Record<string, number>;
+  kvCacheUsageRatio?: number;
+  kvCacheTokens?: number;
+  requestsProcessing?: number;
+  requestsDeferred?: number;
+  nDecodeTotal?: number;
+  nBusySlotsPerDecode?: number;
+  nTokensMax?: number;
+  promptTokensTotal: number;
+  generationTokensTotal: number;
+  promptTokensPerSecond?: number;
+  generationTokensPerSecond?: number;
+  promptTokensPerSecondInstant?: number;
+  generationTokensPerSecondInstant?: number;
+  requestsPerSecond?: number;
+}
+
+export interface SlotState {
+  id: number;
+  taskId?: number;
+  isProcessing: boolean;
+  nPast?: number;
+  nCtx?: number;
+  nPredict?: number;
+  nDecoded?: number;
+  prompt?: string;
+  stopped?: boolean;
+  stoppingWord?: string;
+  samplingParams?: {
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    minP?: number;
+    repeatPenalty?: number;
+  };
+}
+
+export interface RuntimeSlotsSnapshot {
+  at: string;
+  slots: SlotState[];
+}
+
+export interface RuntimeNotice {
+  at: string;
+  severity: 'info' | 'warn' | 'error';
+  code: string;
+  message: string;
+}
+
+export interface SystemStatsEvent {
+  at: string;
+  system: {
+    cpuPercent: number;
+    cpuCores: number;
+    memTotalMiB: number;
+    memUsedMiB: number;
+  };
+  process: {
+    pid: number;
+    cpuPercent: number;
+    rssMiB: number;
+  } | null;
 }
 
 export interface SessionSummary {
@@ -217,6 +411,7 @@ export interface Settings {
   llamaServerPort: number;
   sessionsPerProfileLimit: number;
   uiNoiseFilterEnabledByDefault: boolean;
+  telemetryIntervalMs: number;
 }
 
 export type ErrorCode =

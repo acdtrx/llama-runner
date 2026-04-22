@@ -130,9 +130,9 @@ test('parser: fixture produces zero error/warn events', () => {
   assert.equal(parser.getSnapshot().totals.errors, 0);
 });
 
-test('parser: schema version is 1', () => {
+test('parser: schema version is 2', () => {
   const { parser } = runParser();
-  assert.equal(parser.getSnapshot().schemaVersion, 1);
+  assert.equal(parser.getSnapshot().schemaVersion, 2);
 });
 
 test('parser: event counts on fixture are stable (regression guard)', () => {

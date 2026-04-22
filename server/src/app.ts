@@ -15,6 +15,8 @@ import { registerServerRoutes } from './routes/server.js';
 import { registerSessionRoutes } from './routes/sessions.js';
 import { registerSettingsRoutes } from './routes/settings.js';
 import { startLogsPipeline } from './logs/pipeline.js';
+import { startRuntimePoller } from './llama/runtimePoller.js';
+import { startSystemMonitor } from './system/monitor.js';
 
 async function main(): Promise<void> {
   const env = await loadEnv();
@@ -89,6 +91,8 @@ async function main(): Promise<void> {
   await registerEventsRoute(app);
 
   startLogsPipeline(env.dataDir);
+  startSystemMonitor(env.dataDir);
+  startRuntimePoller(env.dataDir);
 
   try {
     await app.listen({ port: env.port, host: env.host });

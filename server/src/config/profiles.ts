@@ -23,7 +23,7 @@ export interface Profile {
 
 export type NewProfile = Omit<Profile, 'id' | 'createdAt' | 'updatedAt'>;
 
-export const RESERVED_FLAGS = ['--model', '-m', '--host', '--port', '-hf'] as const;
+export const RESERVED_FLAGS = ['--model', '-m', '--host', '--port', '-hf', '--metrics'] as const;
 
 // Loose pattern for HF model references. Accepts owner/repo with optional
 // :quant suffix. Characters allowed match what HF normally uses.

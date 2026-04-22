@@ -47,6 +47,13 @@ export async function registerEventsRoute(app: FastifyInstance): Promise<void> {
     const onMetricsRequest = (payload: BusEvents['metrics.request']): void => send('metrics.request', payload);
     const onMetricsCache = (payload: BusEvents['metrics.cache']): void => send('metrics.cache', payload);
     const onMetricsError = (payload: BusEvents['metrics.error']): void => send('metrics.error', payload);
+    const onMetricsNotice = (payload: BusEvents['metrics.notice']): void => send('metrics.notice', payload);
+    const onMetricsMemoryBreakdown = (payload: BusEvents['metrics.memory-breakdown']): void =>
+      send('metrics.memory-breakdown', payload);
+    const onSystemStats = (payload: BusEvents['system.stats']): void => send('system.stats', payload);
+    const onRuntimeMetrics = (payload: BusEvents['runtime.metrics']): void => send('runtime.metrics', payload);
+    const onRuntimeSlots = (payload: BusEvents['runtime.slots']): void => send('runtime.slots', payload);
+    const onRuntimeNotice = (payload: BusEvents['runtime.notice']): void => send('runtime.notice', payload);
 
     bus.on('server.status', onStatus);
     bus.on('log.line', onLine);
@@ -55,6 +62,12 @@ export async function registerEventsRoute(app: FastifyInstance): Promise<void> {
     bus.on('metrics.request', onMetricsRequest);
     bus.on('metrics.cache', onMetricsCache);
     bus.on('metrics.error', onMetricsError);
+    bus.on('metrics.notice', onMetricsNotice);
+    bus.on('metrics.memory-breakdown', onMetricsMemoryBreakdown);
+    bus.on('system.stats', onSystemStats);
+    bus.on('runtime.metrics', onRuntimeMetrics);
+    bus.on('runtime.slots', onRuntimeSlots);
+    bus.on('runtime.notice', onRuntimeNotice);
 
     const heartbeat = setInterval(() => {
       if (raw.destroyed || raw.writableEnded) return;
@@ -70,6 +83,12 @@ export async function registerEventsRoute(app: FastifyInstance): Promise<void> {
       bus.off('metrics.request', onMetricsRequest);
       bus.off('metrics.cache', onMetricsCache);
       bus.off('metrics.error', onMetricsError);
+      bus.off('metrics.notice', onMetricsNotice);
+      bus.off('metrics.memory-breakdown', onMetricsMemoryBreakdown);
+      bus.off('system.stats', onSystemStats);
+      bus.off('runtime.metrics', onRuntimeMetrics);
+      bus.off('runtime.slots', onRuntimeSlots);
+      bus.off('runtime.notice', onRuntimeNotice);
     };
 
     request.raw.on('close', cleanup);
