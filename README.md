@@ -88,3 +88,7 @@ The spec lives under [`docs/`](./docs):
 - [`07-build-plan.md`](./docs/07-build-plan.md) — phased implementation plan
 
 Coding rules: [`CLAUDE.md`](./CLAUDE.md). Tech stack: [`TECHSTACK.md`](./TECHSTACK.md).
+
+## License
+
+Wisp is released under the **MIT License** — see [`LICENSE`](./LICENSE).
