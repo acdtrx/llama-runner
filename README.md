@@ -6,8 +6,9 @@ Create a profile for a specific model + flag set, start/stop the server with one
 
 ## Requirements
 
+- **macOS or Linux**
 - **Node.js 24+** (see `.nvmrc`)
-- A `llama-server` binary built from llama.cpp — set its path in the app settings on first run
+- A `llama-server` binary built from llama.cpp for your OS — set its path in the app settings on first run
 - A directory of GGUF model files — referenced by profiles
 
 ## Quick start

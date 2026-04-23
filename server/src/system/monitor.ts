@@ -1,4 +1,5 @@
 import { execFile as execFileCb } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { cpus, freemem, platform, totalmem } from 'node:os';
 import { promisify } from 'node:util';
 
@@ -6,9 +7,10 @@ import { readSettings } from '../config/settings.js';
 import { llamaServer } from '../process/llamaServer.js';
 import { bus } from '../sse/bus.js';
 
-// Node has no built-in API for per-PID CPU/RSS or macOS VM stats, so we shell
-// out to `ps` and `vm_stat`. Native alternatives (pidusage, node-macos-mem)
-// ultimately do the same thing via FFI or spawn().
+// Node has no built-in API for per-PID CPU/RSS, so we shell out to `ps`.
+// For system memory we use OS-native sources: `vm_stat` on macOS and
+// /proc/meminfo on Linux — both give a realistic "app-occupied" figure that
+// os.freemem() alone cannot produce (it counts reclaimable cache as used).
 const execFile = promisify(execFileCb);
 
 const FALLBACK_INTERVAL_MS = 1000;
@@ -63,31 +65,49 @@ async function sampleProcessUsage(
   }
 }
 
+async function sampleMemoryDarwin(totalMiB: number): Promise<{ totalMiB: number; usedMiB: number }> {
+  // vm_stat exposes the page buckets we need for a realistic "app-occupied"
+  // number: active + wired + compressor. Inactive/purgeable are treated as
+  // available (os.freemem() omits them, so "total - free" overstates use).
+  const { stdout } = await execFile('vm_stat');
+  const pageSizeMatch = stdout.match(/page size of (\d+) bytes/);
+  const pageSize = pageSizeMatch?.[1] ? Number.parseInt(pageSizeMatch[1], 10) : 16384;
+  const pages = (key: string): number => {
+    const m = stdout.match(new RegExp(`${key}[^:]*:\\s+(\\d+)`));
+    return m?.[1] ? Number.parseInt(m[1], 10) : 0;
+  };
+  const active = pages('Pages active');
+  const wired = pages('Pages wired down');
+  const compressed = pages('Pages occupied by compressor');
+  const usedMiB = ((active + wired + compressed) * pageSize) / (1024 * 1024);
+  return { totalMiB, usedMiB };
+}
+
+async function sampleMemoryLinux(totalMiB: number): Promise<{ totalMiB: number; usedMiB: number }> {
+  // MemAvailable is the kernel's own estimate of memory that can be given to
+  // a new workload without swapping — the Linux analogue of (total - active -
+  // wired - compressed) on macOS. It excludes reclaimable buffers/cache.
+  const meminfo = await readFile('/proc/meminfo', 'utf8');
+  const kib = (key: string): number | null => {
+    const m = meminfo.match(new RegExp(`^${key}:\\s+(\\d+)\\s+kB`, 'm'));
+    return m?.[1] ? Number.parseInt(m[1], 10) : null;
+  };
+  const available = kib('MemAvailable');
+  if (available === null) {
+    return { totalMiB, usedMiB: totalMiB - freemem() / (1024 * 1024) };
+  }
+  return { totalMiB, usedMiB: totalMiB - available / 1024 };
+}
+
 async function sampleMemory(): Promise<{ totalMiB: number; usedMiB: number }> {
   const totalMiB = totalmem() / (1024 * 1024);
-  if (platform() !== 'darwin') {
-    return { totalMiB, usedMiB: totalMiB - freemem() / (1024 * 1024) };
-  }
-  // On macOS, os.freemem() omits inactive/cached pages that the OS can
-  // reclaim, so "total - free" hugely overstates memory in use. vm_stat
-  // exposes the page buckets we need for a realistic "app-occupied" number:
-  // active + wired + compressor. Inactive/purgeable are treated as available.
   try {
-    const { stdout } = await execFile('vm_stat');
-    const pageSizeMatch = stdout.match(/page size of (\d+) bytes/);
-    const pageSize = pageSizeMatch?.[1] ? Number.parseInt(pageSizeMatch[1], 10) : 16384;
-    const pages = (key: string): number => {
-      const m = stdout.match(new RegExp(`${key}[^:]*:\\s+(\\d+)`));
-      return m?.[1] ? Number.parseInt(m[1], 10) : 0;
-    };
-    const active = pages('Pages active');
-    const wired = pages('Pages wired down');
-    const compressed = pages('Pages occupied by compressor');
-    const usedMiB = ((active + wired + compressed) * pageSize) / (1024 * 1024);
-    return { totalMiB, usedMiB };
+    if (platform() === 'darwin') return await sampleMemoryDarwin(totalMiB);
+    if (platform() === 'linux') return await sampleMemoryLinux(totalMiB);
   } catch {
-    return { totalMiB, usedMiB: totalMiB - freemem() / (1024 * 1024) };
+    // Fall through to the generic estimate below.
   }
+  return { totalMiB, usedMiB: totalMiB - freemem() / (1024 * 1024) };
 }
 
 export function startSystemMonitor(dataDir: string): void {
