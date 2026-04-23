@@ -20,6 +20,24 @@
       "tags": ["gemma", "unsloth", "q8", "hf"]
     },
     {
+      "id": "gemma-4-26b-a4b-q4-unsloth-hf",
+      "name": "Gemma 4 26B-A4B UD-Q4_K_XL (Unsloth, HF)",
+      "description": "Unsloth's UD-Q4_K_XL dynamic quantization of Gemma 4 26B-A4B-it (MoE, 4B active). Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/gemma-4-26B-A4B-it-GGUF:UD-Q4_K_XL",
+      "argsLine": "-ngl 99 -c 65536 --temp 1.0 --top-p 0.95 --top-k 64 --parallel 1 --jinja",
+      "tags": ["gemma", "unsloth", "q4", "hf", "moe"]
+    },
+    {
+      "id": "gemma-4-26b-a4b-q8-unsloth-hf",
+      "name": "Gemma 4 26B-A4B Q8_0 (Unsloth, HF)",
+      "description": "Unsloth's Q8_0 quantization of Gemma 4 26B-A4B-it (MoE, 4B active). Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/gemma-4-26B-A4B-it-GGUF:Q8_0",
+      "argsLine": "-ngl 99 -c 65536 --temp 1.0 --top-p 0.95 --top-k 64 --parallel 1 --jinja",
+      "tags": ["gemma", "unsloth", "q8", "hf", "moe"]
+    },
+    {
       "id": "qwen3-6-35b-a3b-q4-unsloth-hf",
       "name": "Qwen3.6 35B-A3B UD-Q4_K_XL (Unsloth, HF) — coding",
       "description": "Unsloth's UD-Q4_K_XL dynamic quantization of Qwen3.6-35B-A3B (MoE, 3B active). Sampling tuned to Unsloth's precise-coding preset in thinking mode. Loaded directly from HuggingFace by llama-server on first run.",
