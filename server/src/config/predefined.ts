@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
+import { copyFile, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -27,6 +28,21 @@ let cache: PredefinedProfiles | null = null;
 function defaultDataFilePath(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   return resolve(here, '..', '..', 'data', 'predefined-profiles.json');
+}
+
+function defaultSeedFilePath(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, '..', '..', 'seed', 'predefined-profiles.json');
+}
+
+async function ensureSeeded(dataPath: string, seedPath: string): Promise<void> {
+  await mkdir(dirname(dataPath), { recursive: true });
+  try {
+    await copyFile(seedPath, dataPath, fsConstants.COPYFILE_EXCL);
+  } catch (err) {
+    // EEXIST: user already has their own copy — preserve it
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+  }
 }
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -74,8 +90,13 @@ function validate(value: unknown): asserts value is PredefinedProfiles {
   });
 }
 
-export async function loadPredefined(path: string = defaultDataFilePath()): Promise<PredefinedProfiles> {
+export async function loadPredefined(
+  path: string = defaultDataFilePath(),
+  seedPath: string = defaultSeedFilePath(),
+): Promise<PredefinedProfiles> {
   if (cache) return cache;
+
+  await ensureSeeded(path, seedPath);
 
   const body = await readFile(path, 'utf8');
   const parsed: unknown = JSON.parse(body);

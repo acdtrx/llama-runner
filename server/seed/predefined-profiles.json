@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "gemma-4-e4b-q4-unsloth-hf",
+      "name": "Gemma 4 E4B Q4_K_XL (Unsloth, HF)",
+      "description": "Unsloth's UD-Q4_K_XL quantization of Gemma 4 E4B-it. Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL",
+      "argsLine": "-ngl 99 -c 65536 --temp 1.0 --top-p 0.95 --top-k 64 --parallel 1 --jinja",
+      "tags": ["gemma", "unsloth", "q4", "hf"]
+    },
+    {
+      "id": "gemma-4-e4b-q8-unsloth-hf",
+      "name": "Gemma 4 E4B Q8_0 (Unsloth, HF)",
+      "description": "Unsloth's Q8_0 quantization of Gemma 4 E4B-it. Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/gemma-4-E4B-it-GGUF:Q8_0",
+      "argsLine": "-ngl 99 -c 65536 --temp 1.0 --top-p 0.95 --top-k 64 --parallel 1 --jinja",
+      "tags": ["gemma", "unsloth", "q8", "hf"]
+    },
+    {
+      "id": "qwen3-6-35b-a3b-q4-unsloth-hf",
+      "name": "Qwen3.6 35B-A3B UD-Q4_K_XL (Unsloth, HF) — coding",
+      "description": "Unsloth's UD-Q4_K_XL dynamic quantization of Qwen3.6-35B-A3B (MoE, 3B active). Sampling tuned to Unsloth's precise-coding preset in thinking mode. Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL",
+      "argsLine": "-ngl 99 -c 131072 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --parallel 1 --jinja",
+      "tags": ["qwen", "qwen3", "unsloth", "q4", "hf", "coding", "moe"]
+    },
+    {
+      "id": "qwen3-6-35b-a3b-q8-unsloth-hf",
+      "name": "Qwen3.6 35B-A3B Q8_0 (Unsloth, HF) — coding",
+      "description": "Unsloth's Q8_0 quantization of Qwen3.6-35B-A3B (MoE, 3B active). Sampling tuned to Unsloth's precise-coding preset in thinking mode. Loaded directly from HuggingFace by llama-server on first run.",
+      "modelSource": "hf",
+      "modelRepo": "unsloth/Qwen3.6-35B-A3B-GGUF:Q8_0",
+      "argsLine": "-ngl 99 -c 131072 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --parallel 1 --jinja",
+      "tags": ["qwen", "qwen3", "unsloth", "q8", "hf", "coding", "moe"]
+    }
+  ]
+}
