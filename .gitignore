@@ -13,3 +13,6 @@ build
 
 # runtime data (never commit user profiles / sessions)
 data
+
+# output of `npm run package`
+release
