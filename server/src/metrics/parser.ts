@@ -21,6 +21,7 @@ import type {
 } from './types.js';
 
 const REQUESTS_RING_SIZE = 100;
+const ERRORS_RING_SIZE = 500;
 const CACHE_HIT_THRESHOLD = 0.1;
 const LISTENING_PREFIX = 'main: server is listening on ';
 
@@ -939,6 +940,9 @@ export class MetricsParser {
     const severity: ErrorEntry['severity'] = /\b(error|panic|abort)\b/i.test(line) ? 'error' : 'warn';
     const entry: ErrorEntry = { at: nowIso(), severity, line };
     this.metrics.errors.push(entry);
+    if (this.metrics.errors.length > ERRORS_RING_SIZE) {
+      this.metrics.errors.splice(0, this.metrics.errors.length - ERRORS_RING_SIZE);
+    }
     this.metrics.totals.errors += 1;
     events.push({ type: 'error', entry });
   }

@@ -32,6 +32,7 @@ import type {
 
 const REQUESTS_RING = 100;
 const LOG_LINE_CAP = 5000;
+const ERRORS_CAP = 500;
 
 interface SessionView {
   summary: SessionSummary;
@@ -225,18 +226,19 @@ export function ProfileDetailScreen(): React.ReactElement {
 
     const offError = sseClient.on<MetricsErrorEvent>('metrics.error', (evt) => {
       if (!matchSession(evt.sessionId)) return;
-      setView((prev) =>
-        prev
-          ? {
-              ...prev,
-              metrics: {
-                ...prev.metrics,
-                errors: [...prev.metrics.errors, evt.entry],
-                totals: { ...prev.metrics.totals, errors: prev.metrics.totals.errors + 1 },
-              },
-            }
-          : prev,
-      );
+      setView((prev) => {
+        if (!prev) return prev;
+        const errors = [...prev.metrics.errors, evt.entry];
+        if (errors.length > ERRORS_CAP) errors.splice(0, errors.length - ERRORS_CAP);
+        return {
+          ...prev,
+          metrics: {
+            ...prev.metrics,
+            errors,
+            totals: { ...prev.metrics.totals, errors: prev.metrics.totals.errors + 1 },
+          },
+        };
+      });
     });
 
     const offSnapshot = sseClient.on<MetricsSnapshotEvent>('metrics.snapshot', (evt) => {

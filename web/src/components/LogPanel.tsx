@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Trash2 } from 'lucide-react';
 
 import type { LogLineEvent } from '../types';
@@ -10,6 +11,10 @@ interface Props {
   onClear?: () => void;
   title?: string;
 }
+
+const ESTIMATED_ROW_HEIGHT = 20;
+const OVERSCAN = 12;
+const STICK_THRESHOLD_PX = 32;
 
 export function LogPanel({
   lines,
@@ -26,18 +31,29 @@ export function LogPanel({
   const [stickToBottom, setStickToBottom] = useState(true);
   const noisyCount = useMemo(() => lines.filter((l) => l.noise).length, [lines]);
 
-  function handleScroll(): void {
+  const virtualizer = useVirtualizer({
+    count: visible.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: OVERSCAN,
+    getItemKey: (index) => {
+      const l = visible[index];
+      return l ? `${l.sessionId}-${l.lineId}` : index;
+    },
+  });
+
+  const handleScroll = useCallback((): void => {
     const el = scrollRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setStickToBottom(distanceFromBottom < 32);
-  }
+    setStickToBottom(distanceFromBottom < STICK_THRESHOLD_PX);
+  }, []);
 
   useLayoutEffect(() => {
     if (!stickToBottom) return;
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [visible, stickToBottom]);
+    if (visible.length === 0) return;
+    virtualizer.scrollToIndex(visible.length - 1, { align: 'end' });
+  }, [visible.length, stickToBottom, virtualizer]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
@@ -52,6 +68,9 @@ export function LogPanel({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [hideNoise, onHideNoiseChange]);
+
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
 
   return (
     <section className="flex h-full flex-col border-t border-neutral-200 dark:border-neutral-800">
@@ -83,26 +102,41 @@ export function LogPanel({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-auto bg-white p-2 font-mono text-xs leading-relaxed dark:bg-neutral-950"
+        className="flex-1 overflow-auto bg-white font-mono text-xs leading-relaxed dark:bg-neutral-950"
       >
         {visible.length === 0 ? (
-          <div className="px-1 py-2 opacity-50">
+          <div className="px-3 py-2 opacity-50">
             {lines.length === 0 ? 'No log lines yet.' : 'All lines are hidden by the noise filter.'}
           </div>
         ) : (
-          visible.map((l) => (
-            <div
-              key={`${l.sessionId}-${l.lineId}`}
-              className={`whitespace-pre-wrap break-words ${
-                l.stream === 'stderr'
-                  ? 'border-l-2 border-neutral-400 pl-2 opacity-90 dark:border-neutral-600'
-                  : ''
-              }`}
-              title={l.stream === 'stderr' ? 'stderr' : undefined}
-            >
-              {l.text}
-            </div>
-          ))
+          <div style={{ height: totalSize, position: 'relative', width: '100%' }}>
+            {virtualItems.map((vi) => {
+              const l = visible[vi.index];
+              if (!l) return null;
+              return (
+                <div
+                  key={vi.key}
+                  ref={virtualizer.measureElement}
+                  data-index={vi.index}
+                  className={`whitespace-pre-wrap break-words px-2 ${
+                    l.stream === 'stderr'
+                      ? 'border-l-2 border-neutral-400 pl-2 opacity-90 dark:border-neutral-600'
+                      : ''
+                  }`}
+                  title={l.stream === 'stderr' ? 'stderr' : undefined}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${vi.start}px)`,
+                  }}
+                >
+                  {l.text}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>

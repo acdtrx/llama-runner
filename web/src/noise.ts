@@ -12,7 +12,11 @@ const PREFIXES = [
 
 const CONTAINS = [' memory_seq_rm '];
 
-const REGEXES: RegExp[] = [/^srv\s+update:\s+-\s+prompt\s+0x/];
+const REGEXES: RegExp[] = [
+  /^srv\s+update:\s+-\s+prompt\s+0x/,
+  /^srv\s+log_server_r:\s+done request:\s+GET\s+\/(slots|metrics|props|health)\b/,
+  /^srv\s+stop:\s+cancel task,\s+id_task\s*=/,
+];
 
 export function isNoisy(line: string): boolean {
   for (const prefix of PREFIXES) if (line.includes(prefix)) return true;

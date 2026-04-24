@@ -16,6 +16,10 @@ const CONTAINS = [' memory_seq_rm '];
 
 const REGEXES: RegExp[] = [
   /^srv\s+update:\s+-\s+prompt\s+0x/,
+  // Access-log line for our own runtime poller's HTTP traffic.
+  /^srv\s+log_server_r:\s+done request:\s+GET\s+\/(slots|metrics|props|health)\b/,
+  // Scheduler bookkeeping that cancels the internal task serving a poll.
+  /^srv\s+stop:\s+cancel task,\s+id_task\s*=/,
 ];
 
 export function isNoisy(line: string): boolean {

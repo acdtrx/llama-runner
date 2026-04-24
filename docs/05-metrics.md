@@ -37,6 +37,8 @@ Lines whose text matches any of these substring patterns get `noise: true`:
 - `prompt processing progress, n_tokens = `
 - `n_tokens = ` followed by ` memory_seq_rm `
 - `srv        update:    - prompt 0x` (individual prompt cache entries — still parsed, but the line itself is noisy)
+- `srv  log_server_r: done request: GET /{slots,metrics,props,health}` (access-log chatter from our own runtime poller)
+- `srv          stop: cancel task, id_task = N` (scheduler bookkeeping that cancels the internal task serving a poll — not your inference task)
 
 These are hidden from the live log view by default. The raw log on disk keeps them. Every noisy line is still offered to the relevant metric parsers (several of them live inside these lines).
 
