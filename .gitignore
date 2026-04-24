@@ -2,6 +2,7 @@ node_modules
 dist
 build
 .DS_Store
+*.tsbuildinfo
 
 # local dev / editor
 .vite
