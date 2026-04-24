@@ -4,6 +4,11 @@ Local webapp that wraps [llama.cpp's](https://github.com/ggml-org/llama.cpp) `ll
 
 Create a profile for a specific model + flag set, start/stop the server with one click, watch its logs and parsed performance metrics live, and keep every run archived on disk for later inspection.
 
+<p align="center">
+  <a href="screenshots/main.png"><img src="screenshots/main.png" width="49%" alt="Profile dashboard with live throughput, totals, and recent requests" /></a>
+  <a href="screenshots/details.png"><img src="screenshots/details.png" width="49%" alt="Tokenizer, GPU capabilities, model metadata, and live log panel" /></a>
+</p>
+
 ## Requirements
 
 - **macOS or Linux**
