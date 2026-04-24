@@ -191,7 +191,14 @@ export function startRuntimePoller(dataDir: string): void {
     // scheduler logs "update_slots: all slots are idle" on every HTTP
     // request to /metrics and /slots, so idle-time polling fills the log.
     if (activeCount === 0 && trailingTicksRemaining === 0) return;
-    if (activeCount === 0 && trailingTicksRemaining > 0) trailingTicksRemaining -= 1;
+    // Trailing tick: no slot is active right now, we're firing one last time
+    // to flush the final idle state (KV fill, queue, counters). The instant
+    // rate deltas would still be positive from tokens decoded between the
+    // last mid-gen sample and now, so clear them explicitly — otherwise the
+    // UI's "now" value sticks at the last mid-gen reading until the next
+    // request starts.
+    const isTrailingTick = activeCount === 0 && trailingTicksRemaining > 0;
+    if (isTrailingTick) trailingTicksRemaining -= 1;
 
     const nowMs = Date.now();
     const counters = await fetchMetricsCounters();
@@ -213,7 +220,11 @@ export function startRuntimePoller(dataDir: string): void {
       // prompt_tokens_total at batch boundaries during prompt processing,
       // so this catches prompt progress even though /slots doesn't expose
       // n_past in this build.
-      const genPerSec = slots ? computeInstantGenRate(slots, prevSlots, nowMs) : undefined;
+      const genPerSec = isTrailingTick
+        ? undefined
+        : slots
+          ? computeInstantGenRate(slots, prevSlots, nowMs)
+          : undefined;
 
       let promptPerSec: number | undefined;
       let requestsPerSecond: number | undefined;
@@ -221,7 +232,7 @@ export function startRuntimePoller(dataDir: string): void {
         const dtSec = (nowMs - prev.at) / 1000;
         if (dtSec > 0) {
           const dPrompt = promptTokens - prev.promptTokens;
-          if (dPrompt > 0) promptPerSec = dPrompt / dtSec;
+          if (dPrompt > 0 && !isTrailingTick) promptPerSec = dPrompt / dtSec;
           requestsPerSecond = (requestsTotal - prev.requestsTotal) / dtSec;
         }
       }
