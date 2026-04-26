@@ -30,6 +30,13 @@ let prev: PrevCounters | null = null;
 let prevSlots: PrevSlotsSample | null = null;
 let runningSessionId: string | null = null;
 
+// Last emitted snapshots, retained so that clients reconnecting (e.g. after a
+// page refresh) mid-session can be replayed the current runtime state instead
+// of waiting for the next poller tick — which may be a full interval away, or
+// never arrive if all slots are idle (poller is activity-gated).
+let lastMetricsSnapshot: RuntimeMetricsSnapshot | null = null;
+let lastSlotsSnapshot: RuntimeSlotsSnapshot | null = null;
+
 // Polling is gated on actual activity to avoid waking llama-server's
 // scheduler with HTTP noise when idle. We detect activity by watching the
 // log stream for slot launch / release lines. When activeCount > 0 we
@@ -45,6 +52,16 @@ function reset(): void {
   prevSlots = null;
   activeCount = 0;
   trailingTicksRemaining = 0;
+  lastMetricsSnapshot = null;
+  lastSlotsSnapshot = null;
+}
+
+export function getLastRuntimeMetrics(): RuntimeMetricsSnapshot | null {
+  return lastMetricsSnapshot;
+}
+
+export function getLastRuntimeSlots(): RuntimeSlotsSnapshot | null {
+  return lastSlotsSnapshot;
 }
 
 function snapshotSlots(slots: SlotState[], at: number): PrevSlotsSample {
@@ -132,6 +149,8 @@ export function startRuntimePoller(dataDir: string): void {
     }
     if (status.state !== 'running') {
       runningSessionId = null;
+      lastMetricsSnapshot = null;
+      lastSlotsSnapshot = null;
     }
   });
 
@@ -205,7 +224,9 @@ export function startRuntimePoller(dataDir: string): void {
     const slots = await fetchSlotsNormalized();
 
     if (slots !== null) {
-      bus.emitEvent('runtime.slots', { at: new Date(nowMs).toISOString(), slots });
+      const slotsSnapshot: RuntimeSlotsSnapshot = { at: new Date(nowMs).toISOString(), slots };
+      lastSlotsSnapshot = slotsSnapshot;
+      bus.emitEvent('runtime.slots', slotsSnapshot);
     }
 
     if (counters !== null) {
@@ -256,6 +277,7 @@ export function startRuntimePoller(dataDir: string): void {
         generationTokensPerSecondInstant: genPerSec,
         requestsPerSecond,
       };
+      lastMetricsSnapshot = snapshot;
       bus.emitEvent('runtime.metrics', snapshot);
     }
 

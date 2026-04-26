@@ -4,6 +4,7 @@ import { bus } from '../sse/bus.js';
 import type { BusEventName, BusEvents } from '../sse/bus.js';
 import { llamaServer } from '../process/llamaServer.js';
 import { getActiveMetricsSnapshot } from '../logs/pipeline.js';
+import { getLastRuntimeMetrics, getLastRuntimeSlots } from '../llama/runtimePoller.js';
 
 const HEARTBEAT_MS = 15_000;
 const SSE_HEADERS = {
@@ -33,11 +34,17 @@ export async function registerEventsRoute(app: FastifyInstance): Promise<void> {
     // waiting for the next transition. Replays:
     //   - server.status (always)
     //   - metrics.snapshot (full SessionMetrics; only when a session is active)
+    //   - runtime.metrics / runtime.slots (last poller emission; cleared on
+    //     session change/stop, so non-null implies current data)
     send('server.status', llamaServer.getStatus());
     const snapshot = getActiveMetricsSnapshot();
     if (snapshot) {
       send('metrics.snapshot', { sessionId: snapshot.sessionId, metrics: snapshot.metrics });
     }
+    const lastRuntimeMetrics = getLastRuntimeMetrics();
+    if (lastRuntimeMetrics) send('runtime.metrics', lastRuntimeMetrics);
+    const lastRuntimeSlots = getLastRuntimeSlots();
+    if (lastRuntimeSlots) send('runtime.slots', lastRuntimeSlots);
     send('ready', { at: new Date().toISOString() });
 
     const onStatus = (payload: BusEvents['server.status']): void => send('server.status', payload);
