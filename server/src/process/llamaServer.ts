@@ -2,7 +2,8 @@ import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
 import { AppError } from '../errors.js';
@@ -120,9 +121,15 @@ class LlamaServerFacade extends EventEmitter {
       ...userArgs,
     ];
 
+    const env = { ...process.env };
+    if (profile.modelSource === 'hf' && !env.HF_TOKEN) {
+      const cachedToken = await readHuggingFaceCachedToken();
+      if (cachedToken) env.HF_TOKEN = cachedToken;
+    }
+
     const child = spawn(settings.llamaServerBinaryPath, argv, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env,
       detached: false,
     });
 
@@ -291,6 +298,28 @@ function resolveModelPath(modelsDir: string, modelFile: string): string {
     });
   }
   return abs;
+}
+
+// `hf auth login` writes its token to ~/.cache/huggingface/token (or under
+// $HF_HOME). llama-server only reads HF_TOKEN from the environment, so mirror
+// the cached token into the spawned env so an authenticated `hf` user gets
+// gated repos and the higher rate limit without setting HF_TOKEN themselves.
+async function readHuggingFaceCachedToken(): Promise<string | null> {
+  const candidates = [
+    process.env.HF_TOKEN_PATH,
+    process.env.HF_HOME ? `${process.env.HF_HOME}/token` : null,
+    `${homedir()}/.cache/huggingface/token`,
+  ].filter((p): p is string => Boolean(p));
+  for (const path of candidates) {
+    try {
+      const text = await readFile(path, 'utf8');
+      const token = text.trim();
+      if (token) return token;
+    } catch {
+      // file not present / unreadable — try next candidate
+    }
+  }
+  return null;
 }
 
 async function assertBinaryUsable(path: string): Promise<void> {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { HfStartupNotice } from '../components/HfStartupNotice';
 import { LogPanel } from '../components/LogPanel';
 import { ProfileConfigCard } from '../components/ProfileConfigCard';
 import { ProfileConfigForm } from '../components/ProfileConfigForm';
@@ -321,6 +322,8 @@ export function ProfileDetailScreen(): React.ReactElement {
           )}
         </ErrorBoundary>
       </div>
+
+      <HfStartupNotice profile={profile} />
 
       <SessionPicker
         profileId={profile.id}

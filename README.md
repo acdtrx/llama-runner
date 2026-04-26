@@ -16,6 +16,17 @@ Create a profile for a specific model + flag set, start/stop the server with one
 - A `llama-server` binary built from llama.cpp for your OS — set its path in the app settings on first run
 - A directory of GGUF model files — referenced by profiles
 
+### Optional: Hugging Face authentication
+
+Profiles in *HuggingFace* mode let `llama-server` download the model itself via its `-hf` flag. Anonymous downloads work but are subject to Hugging Face's anonymous rate limit, and gated/private repos are out of reach. To lift both, install the Hugging Face CLI and sign in once:
+
+```
+pip install -U huggingface_hub   # or: brew install hf
+hf auth login
+```
+
+llama-runner picks up the resulting token from `~/.cache/huggingface/token` (or `$HF_HOME/token` / `$HF_TOKEN_PATH`) and exports it as `HF_TOKEN` to llama-server when starting an HF profile. If you already have `HF_TOKEN` set in your shell, that wins.
+
 ## Quick start
 
 ```
